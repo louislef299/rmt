@@ -23,3 +23,7 @@ go.work.sum
 
 # Test Files
 test*
+
+token
+# Added by goreleaser init:
+dist/
