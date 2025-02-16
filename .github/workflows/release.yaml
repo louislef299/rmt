@@ -5,6 +5,10 @@ on:
     tags:
       - "v*"
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   go-release:
     runs-on: ubuntu-latest
@@ -19,7 +23,7 @@ jobs:
         check-latest: true
     - uses: goreleaser/goreleaser-action@v6
       env:
-        GITHUB_TOKEN: ${{ secrets.GORELEASER_SECRET }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         distribution: goreleaser
         version: latest
