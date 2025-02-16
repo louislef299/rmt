@@ -10,3 +10,5 @@ build:
 	GOVERSION=$(GOVERSION) goreleaser build \
 		--snapshot --clean --skip=validate
 
+clean:
+	rm -rf dist
