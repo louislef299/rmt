@@ -4,18 +4,26 @@ const std = @import("std");
 // https://ziglang.org/documentation/0.14.0/std/#std.process
 pub fn main() !void {
     const stdout = std.io.getStdOut().writer();
-    const allocator = std.heap.page_allocator;
 
     // Parse command-line arguments
-    const args = try std.process.argsAlloc(allocator);
-    defer std.process.argsFree(allocator, args);
+    var args = std.process.args();
 
-    const recursive = std.cli.flag("--recursive", "List files recursively.");
-    try std.cli.parse(args);
+    // const recursive = std.cli.flag("--recursive", "List files
+    // recursively.");
+    const recursive = false;
+    var count: usize = 0;
+    while (args.next()) |arg| {
+        if (count != 0) {
+            std.debug.print("arg {d}: {s}\n", .{ count, arg });
+        }
+        count += 1;
+    }
 
     var cwd = try std.fs.cwd().openDir(".", .{ .iterate = true });
     defer cwd.close();
 
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
     if (recursive) {
         std.debug.print("we are now going to try walking through the dir...\n", .{});
         var walker = try cwd.walk(allocator);
