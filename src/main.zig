@@ -1,9 +1,6 @@
 const std = @import("std");
-
-const OptionError = error{
-    UnknownInput,
-    HelpMsg,
-};
+const Option = @import("Option.zig").Option;
+const OptionError = @import("Option.zig").OptionError;
 
 const usage =
     \\Usage: rmt [options]
@@ -16,11 +13,6 @@ const usage =
     \\
 ;
 
-// Create an Option type, figure out what options are set based on flags, return
-// Options type, and then run the rmt filesystem logic
-
-// when you get to parsing args, just take a look at the process lib:
-// https://ziglang.org/documentation/0.14.0/std/#std.process
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
@@ -63,35 +55,3 @@ pub fn main() !void {
 fn printHelp() !void {
     return std.io.getStdErr().writer().writeAll(usage);
 }
-
-// Represents the General Options available.
-pub const Option = struct {
-    recursive: bool,
-    interactive: bool,
-
-    // Parses the provided arguments and returns an Option type based on the
-    // provided arguments. Attempts to avoid any printing done by the Option
-    // type in favor of the user deciding how to act on the returned errors.
-    fn init(args: []const []const u8) !Option {
-        var r = false;
-        var inter = false;
-
-        // didn't use switch here as I don't think zig supports that yet
-        for (args) |arg| {
-            if (std.mem.eql(u8, arg, "--recursive") or std.mem.eql(u8, arg, "-r")) {
-                r = true;
-            } else if (std.mem.eql(u8, arg, "--interactive") or std.mem.eql(u8, arg, "-i")) {
-                inter = true;
-            } else if (std.mem.eql(u8, arg, "--help")) {
-                return OptionError.HelpMsg;
-            } else {
-                return OptionError.UnknownInput;
-            }
-        }
-
-        return .{
-            .recursive = r,
-            .interactive = inter,
-        };
-    }
-};
