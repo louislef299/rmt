@@ -7,32 +7,27 @@ pub const OptionError = error{
 
 // Represents the General Options available.
 pub const Option = struct {
-    recursive: bool,
-    interactive: bool,
+    recursive: bool = false,
+    interactive: bool = false,
 
     // Parses the provided arguments and returns an Option type based on the
     // provided arguments. Attempts to avoid any printing done by the Option
     // type in favor of the user deciding how to act on the returned errors.
     pub fn init(args: []const []const u8) !Option {
-        var r = false;
-        var inter = false;
+        var o = Option{};
 
         // didn't use switch here as I don't think zig supports that yet
         for (args) |arg| {
             if (std.mem.eql(u8, arg, "--recursive") or std.mem.eql(u8, arg, "-r")) {
-                r = true;
+                o.recursive = true;
             } else if (std.mem.eql(u8, arg, "--interactive") or std.mem.eql(u8, arg, "-i")) {
-                inter = true;
+                o.interactive = true;
             } else if (std.mem.eql(u8, arg, "--help")) {
                 return OptionError.HelpMsg;
             } else {
                 return OptionError.UnknownInput;
             }
         }
-
-        return .{
-            .recursive = r,
-            .interactive = inter,
-        };
+        return o;
     }
 };
