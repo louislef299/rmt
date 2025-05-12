@@ -35,7 +35,7 @@ pub const Session = struct {
     pub fn delete(self: Session, f: std.fs.File, file: []const u8) !void {
         var del = true;
         if (self.interactive) {
-            del = try interactiveDelete(f);
+            del = try interactiveDelete(f, file);
         }
 
         if (del) {
@@ -46,11 +46,23 @@ pub const Session = struct {
     }
 };
 
-fn interactiveDelete(f: std.fs.File) !bool {
+fn interactiveDelete(f: std.fs.File, name: []const u8) !bool {
     const r = f.reader();
 
-    var buf: [10]u8 = undefined;
-    _ = try r.readUntilDelimiterOrEof(&buf, '\n');
+    try std.io.getStdOut().writer().print("delete file {s}? ", .{name});
 
-    return (std.mem.eql(u8, &buf, "yes") or std.mem.eql(u8, &buf, "y"));
+    const bare_line = try r.readUntilDelimiterAlloc(
+        std.heap.page_allocator,
+        '\n',
+        512,
+    );
+    defer std.heap.page_allocator.free(bare_line);
+
+    // Because of legacy reasons newlines in many places in Windows are represented
+    // by the two-character sequence \r\n, which means that we must strip \r from
+    // the line that we've read. Without this our program will behave incorrectly
+    // on Windows.
+    const line = std.mem.trim(u8, bare_line, "\r");
+
+    return (std.mem.eql(u8, line, "yes") or std.mem.eql(u8, line, "y"));
 }
