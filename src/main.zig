@@ -29,6 +29,7 @@ pub fn main() !void {
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
 
+    // Generate Options provided by user
     const o = Option.init(args[1..]) catch |err| switch (err) {
         OptionError.HelpMsg => {
             try printHelp();
@@ -43,8 +44,8 @@ pub fn main() !void {
     var cwd = try std.fs.cwd().openDir(".", .{ .iterate = true });
     defer cwd.close();
 
+    // if recursive, walk the filesystem from cwd
     if (o.recursive) {
-        std.debug.print("we are now going to try walking through the dir...\n", .{});
         var walker = try cwd.walk(allocator);
         defer walker.deinit();
 
@@ -52,7 +53,6 @@ pub fn main() !void {
             std.debug.print("{s}\n", .{entry.path});
         }
     } else {
-        std.debug.print("just looking in the current directory...\n", .{});
         var it = cwd.iterate();
         while (try it.next()) |entry| {
             std.debug.print("{s}\n", .{entry.name});
@@ -70,11 +70,13 @@ pub const Option = struct {
     interactive: bool,
 
     // Parses the provided arguments and returns an Option type based on the
-    // provided arguments.
+    // provided arguments. Attempts to avoid any printing done by the Option
+    // type in favor of the user deciding how to act on the returned errors.
     fn init(args: []const []const u8) !Option {
         var r = false;
         var inter = false;
 
+        // didn't use switch here as I don't think zig supports that yet
         for (args) |arg| {
             if (std.mem.eql(u8, arg, "--recursive") or std.mem.eql(u8, arg, "-r")) {
                 r = true;
