@@ -23,7 +23,7 @@ pub fn main() !void {
 
     // generate Options provided by user and skip args[0] as that is the actual
     // rmt argument
-    const sess = Session.init(args[1..]) catch |err| switch (err) {
+    const sess = Session.init(allocator, args[1..]) catch |err| switch (err) {
         OptionError.HelpMsg => {
             try printHelp();
             return;
@@ -33,6 +33,9 @@ pub fn main() !void {
             return err;
         },
     };
+    defer {
+        sess.deinit();
+    }
 
     var cwd = try std.fs.cwd().openDir(".", .{ .iterate = true });
     defer cwd.close();
