@@ -1,14 +1,9 @@
 const std = @import("std");
-const Allocator = std.mem.Allocator;
 const re = @cImport(@cInclude("regez.h"));
 
 const REGEX_T_SIZEOF = re.sizeof_regex_t;
 const REGEX_T_ALIGNOF = re.alignof_regex_t;
 const EMACS_TILDE = ".*~$";
-
-pub const OptionError = error{
-    UnknownInput,
-};
 
 const usage =
     \\Usage: rmt [options]
@@ -42,7 +37,7 @@ pub fn main() !void {
             return printHelp();
         } else {
             std.debug.print("Unknown option: {s}\n", .{arg});
-            return OptionError.UnknownInput;
+            return printHelp();
         }
     }
 
@@ -88,7 +83,10 @@ pub fn delete(f: std.fs.File, cwd: std.fs.Dir, file: []const u8, i: bool, regext
         }
         if (del) {
             std.debug.print("deleting file {s}\n", .{file});
-            try cwd.deleteFile(file);
+            cwd.deleteFile(file) catch |err| {
+                std.debug.print("skipping {s} due to error: {}\n", .{ file, err });
+                return;
+            };
             return;
         }
     }
