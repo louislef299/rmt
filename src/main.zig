@@ -35,13 +35,13 @@ pub fn main() !void {
     var interactive: bool = false;
     // didn't use switch here as I don't think zig supports that yet
     // https://www.openmymind.net/Switching-On-Strings-In-Zig/?
-    for (args) |arg| {
+    for (args[1..]) |arg| {
         if (std.mem.eql(u8, arg, "--recursive") or std.mem.eql(u8, arg, "-r")) {
             recursive = true;
         } else if (std.mem.eql(u8, arg, "--interactive") or std.mem.eql(u8, arg, "-i")) {
             interactive = true;
         } else if (std.mem.eql(u8, arg, "--help")) {
-            return OptionError.HelpMsg;
+            return printHelp();
         } else {
             return OptionError.UnknownInput;
         }
@@ -52,26 +52,24 @@ pub fn main() !void {
 
     const stdin = std.io.getStdIn();
 
-    std.debug.print("made it here!\n", .{});
-
     // if recursive, walk the filesystem from cwd
     if (recursive) {
         var walker = try cwd.walk(allocator);
         defer walker.deinit();
 
         while (try walker.next()) |entry| {
-            try delete(stdin, entry.path);
+            try delete(allocator, stdin, entry.path, interactive);
         }
     } else {
         var it = cwd.iterate();
         while (try it.next()) |entry| {
-            try delete(stdin, entry.name);
+            try delete(allocator, stdin, entry.name, interactive);
         }
     }
 }
 
 fn printHelp() !void {
-    return std.io.getStdErr().writer().writeAll(usage);
+    return std.io.getStdOut().writer().writeAll(usage);
 }
 
 pub fn delete(allocator: Allocator, f: std.fs.File, file: []const u8, i: bool) !void {
@@ -84,17 +82,17 @@ pub fn delete(allocator: Allocator, f: std.fs.File, file: []const u8, i: bool) !
     }
 
     const c_file: [*:0]const u8 = @ptrCast(file);
-    var del = re.isMatch(regext, c_file);
-
-    if (i) {
-        del = try interactiveDelete(f, file);
+    if (re.isMatch(regext, c_file)) {
+        var del: bool = true;
+        if (i) {
+            del = try interactiveDelete(f, file);
+        }
+        if (del) {
+            std.debug.print("deleting file {s}\n", .{file});
+            return;
+        }
     }
-
-    if (del) {
-        std.debug.print("deleting file {s}\n", .{file});
-    } else {
-        std.debug.print("skipping deletion of {s}\n", .{file});
-    }
+    std.debug.print("skipping deletion of {s}\n", .{file});
 }
 
 fn interactiveDelete(f: std.fs.File, name: []const u8) !bool {
