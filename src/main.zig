@@ -52,27 +52,6 @@ pub fn main() !void {
 
     const stdin = std.io.getStdIn();
 
-    // if recursive, walk the filesystem from cwd
-    if (recursive) {
-        var walker = try cwd.walk(allocator);
-        defer walker.deinit();
-
-        while (try walker.next()) |entry| {
-            try delete(allocator, stdin, entry.path, interactive);
-        }
-    } else {
-        var it = cwd.iterate();
-        while (try it.next()) |entry| {
-            try delete(allocator, stdin, entry.name, interactive);
-        }
-    }
-}
-
-fn printHelp() !void {
-    return std.io.getStdOut().writer().writeAll(usage);
-}
-
-pub fn delete(allocator: Allocator, f: std.fs.File, file: []const u8, i: bool) !void {
     const slice = try allocator.alignedAlloc(u8, REGEX_T_ALIGNOF, REGEX_T_SIZEOF);
     defer allocator.free(slice);
 
@@ -81,6 +60,27 @@ pub fn delete(allocator: Allocator, f: std.fs.File, file: []const u8, i: bool) !
         return OptionError.RegexAllocation;
     }
 
+    // if recursive, walk the filesystem from cwd
+    if (recursive) {
+        var walker = try cwd.walk(allocator);
+        defer walker.deinit();
+
+        while (try walker.next()) |entry| {
+            try delete(stdin, cwd, entry.path, interactive, regext);
+        }
+    } else {
+        var it = cwd.iterate();
+        while (try it.next()) |entry| {
+            try delete(stdin, cwd, entry.name, interactive, regext);
+        }
+    }
+}
+
+fn printHelp() !void {
+    return std.io.getStdOut().writer().writeAll(usage);
+}
+
+pub fn delete(f: std.fs.File, cwd: std.fs.Dir, file: []const u8, i: bool, regext: [*]re.regex_t) !void {
     const c_file: [*:0]const u8 = @ptrCast(file);
     if (re.isMatch(regext, c_file)) {
         var del: bool = true;
@@ -89,10 +89,10 @@ pub fn delete(allocator: Allocator, f: std.fs.File, file: []const u8, i: bool) !
         }
         if (del) {
             std.debug.print("deleting file {s}\n", .{file});
+            try cwd.deleteFile(file);
             return;
         }
     }
-    std.debug.print("skipping deletion of {s}\n", .{file});
 }
 
 fn interactiveDelete(f: std.fs.File, name: []const u8) !bool {

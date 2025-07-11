@@ -6,6 +6,7 @@ const REGEX_T_ALIGNOF = re.alignof_regex_t;
 
 const std = @import("std");
 
+// A little program demonstrating how to use regex in zig with the C import
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
