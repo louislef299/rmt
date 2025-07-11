@@ -4,12 +4,10 @@ const re = @cImport(@cInclude("regez.h"));
 
 const REGEX_T_SIZEOF = re.sizeof_regex_t;
 const REGEX_T_ALIGNOF = re.alignof_regex_t;
-const EMACS_TILDE = ".*~";
+const EMACS_TILDE = ".*~$";
 
 pub const OptionError = error{
     UnknownInput,
-    HelpMsg,
-    RegexAllocation,
 };
 
 const usage =
@@ -40,9 +38,10 @@ pub fn main() !void {
             recursive = true;
         } else if (std.mem.eql(u8, arg, "--interactive") or std.mem.eql(u8, arg, "-i")) {
             interactive = true;
-        } else if (std.mem.eql(u8, arg, "--help")) {
+        } else if (std.mem.eql(u8, arg, "--help") or std.mem.eql(u8, arg, "-h")) {
             return printHelp();
         } else {
+            std.debug.print("Unknown option: {s}\n", .{arg});
             return OptionError.UnknownInput;
         }
     }
@@ -57,7 +56,7 @@ pub fn main() !void {
 
     const regext: [*]re.regex_t = @ptrCast(slice.ptr);
     if (re.regcomp(regext, EMACS_TILDE, 0) != 0) {
-        return OptionError.RegexAllocation;
+        return std.debug.panic("failed to allocate regex memory\n", .{});
     }
 
     // if recursive, walk the filesystem from cwd
