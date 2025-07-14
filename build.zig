@@ -11,6 +11,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     exe.addIncludePath(b.path("lib/regez"));
+    exe.linkLibC();
     b.installArtifact(exe);
 
     //=> Run Steps <=//
