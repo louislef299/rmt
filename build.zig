@@ -19,8 +19,8 @@ pub fn build(b: *std.Build) void {
                 .target = b.resolveTargetQuery(t),
                 .optimize = .ReleaseSafe,
             });
-            exe.addIncludePath(b.path("lib/regez"));
-            exe.addCSourceFile(.{ .file = b.path("lib/regez/regez.c") });
+            exe.addIncludePath(b.path("slre"));
+            exe.addCSourceFile(.{ .file = b.path("slre/slre.c") });
             exe.linkLibC();
             b.installArtifact(exe);
         }
@@ -33,7 +33,8 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = optimize,
         });
-        exe.addIncludePath(b.path("lib/regez"));
+        exe.addIncludePath(b.path("slre"));
+        exe.addCSourceFile(.{ .file = b.path("slre/slre.c") });
         exe.linkLibC();
         b.installArtifact(exe);
 
@@ -55,7 +56,7 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = optimize,
         });
-        exe_unit_tests.addIncludePath(b.path("lib/regez"));
+        exe_unit_tests.addIncludePath(b.path("slre"));
         const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
 
         const test_step = b.step("test", "Run unit tests");

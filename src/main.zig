@@ -1,8 +1,8 @@
 const std = @import("std");
-const re = @cImport(@cInclude("regez.h"));
+const c = @cImport({
+    @cInclude("slre.h");
+});
 
-const REGEX_T_SIZEOF = re.sizeof_regex_t;
-const REGEX_T_ALIGNOF = re.alignof_regex_t;
 const EMACS_TILDE = ".*~$";
 
 const usage =
@@ -46,26 +46,24 @@ pub fn main() !void {
 
     const stdin = std.io.getStdIn();
 
-    const slice = try allocator.alignedAlloc(u8, REGEX_T_ALIGNOF, REGEX_T_SIZEOF);
-    defer allocator.free(slice);
-
-    const regext: [*]re.regex_t = @ptrCast(slice.ptr);
-    if (re.regcomp(regext, EMACS_TILDE, 0) != 0) {
-        return std.debug.panic("failed to allocate regex memory\n", .{});
-    }
-
     // if recursive, walk the filesystem from cwd
     if (recursive) {
         var walker = try cwd.walk(allocator);
         defer walker.deinit();
 
         while (try walker.next()) |entry| {
-            try delete(stdin, cwd, entry.path, interactive, regext);
+            try delete(stdin, cwd, entry.path, interactive);
         }
     } else {
         var it = cwd.iterate();
         while (try it.next()) |entry| {
-            try delete(stdin, cwd, entry.name, interactive, regext);
+            // Dir.Entry returns a []const u8 and isn't null-terminated. have to
+            // handle that case here...
+            var cSlice = try allocator.alloc(u8, entry.name.len + 1);
+            @memcpy(cSlice[0..cSlice.len], entry.name);
+            cSlice[entry.name.len] = 0;
+
+            try delete(stdin, cwd, cSlice[0.. :0], interactive);
         }
     }
 }
@@ -74,9 +72,17 @@ fn printHelp() !void {
     return std.io.getStdOut().writer().writeAll(usage);
 }
 
-pub fn delete(f: std.fs.File, cwd: std.fs.Dir, file: []const u8, i: bool, regext: [*]re.regex_t) !void {
-    const c_file: [*:0]const u8 = @ptrCast(file);
-    if (re.isMatch(regext, c_file)) {
+pub fn delete(f: std.fs.File, cwd: std.fs.Dir, file: [:0]const u8, i: bool) !void {
+    const match = c.slre_match(
+        EMACS_TILDE,
+        file.ptr,
+        @intCast(file.len),
+        null, // no capture groups
+        0,
+        0,
+    );
+
+    if (match >= 0) {
         var del: bool = true;
         if (i) {
             del = try interactiveDelete(f, file);
