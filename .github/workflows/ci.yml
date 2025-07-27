@@ -35,4 +35,4 @@ jobs:
         gh release create "$TAG_NAME" \
           --title "$TAG_NAME" \
           --notes-from-tag --fail-on-no-commits \
-          zig-out/bin/
+          zig-out/bin/*
