@@ -2,7 +2,8 @@ const std = @import("std");
 
 const targets: []const std.Target.Query = &.{
     .{ .cpu_arch = .aarch64, .os_tag = .macos },
-    .{ .cpu_arch = .aarch64, .os_tag = .linux },
+    .{ .cpu_arch = .aarch64, .os_tag = .linux, .abi = .gnu },
+    .{ .cpu_arch = .aarch64, .os_tag = .linux, .abi = .musl },
     .{ .cpu_arch = .x86_64, .os_tag = .linux, .abi = .gnu },
     .{ .cpu_arch = .x86_64, .os_tag = .linux, .abi = .musl },
 };
@@ -12,9 +13,14 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     if (b.option(bool, "release-build", "Build executables for release target architectures") orelse false) {
-        for (targets) |t| {
+        //=> Release Build Flow <=//
+        inline for (targets) |t| {
+            const arch = @tagName(t.cpu_arch orelse unreachable);
+            const os = @tagName(t.os_tag orelse unreachable);
+            const abi = if (t.abi) |a| "-" ++ @tagName(a) else "";
+
             const exe = b.addExecutable(.{
-                .name = "rmt",
+                .name = std.fmt.comptimePrint("rmt-{s}-{s}{s}", .{ arch, os, abi }),
                 .root_source_file = b.path("src/main.zig"),
                 .target = b.resolveTargetQuery(t),
                 .optimize = .ReleaseSafe,
@@ -26,7 +32,6 @@ pub fn build(b: *std.Build) void {
         }
     } else {
         //=> Normal Build Flow <=//
-
         const exe = b.addExecutable(.{
             .name = "rmt",
             .root_source_file = b.path("src/main.zig"),
@@ -39,7 +44,6 @@ pub fn build(b: *std.Build) void {
         b.installArtifact(exe);
 
         //=> Run Steps <=//
-
         const run_cmd = b.addRunArtifact(exe);
         run_cmd.step.dependOn(b.getInstallStep());
 
@@ -50,7 +54,6 @@ pub fn build(b: *std.Build) void {
         run_step.dependOn(&run_cmd.step);
 
         //=> Test Steps <=//
-
         const exe_unit_tests = b.addTest(.{
             .root_source_file = b.path("src/main.zig"),
             .target = target,
