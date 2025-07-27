@@ -1,4 +1,5 @@
 const std = @import("std");
+const config = @import("build_config");
 const c = @cImport({
     @cInclude("slre.h");
 });
@@ -13,6 +14,7 @@ const usage =
     \\  -h, --help          Print command-specific usage
     \\  -i, --interactive   Interactive output
     \\  -r, --recursive     Walk filepath starting at current directory
+    \\  --version           Print version & build information
     \\
 ;
 
@@ -35,6 +37,8 @@ pub fn main() !void {
             interactive = true;
         } else if (std.mem.eql(u8, arg, "--help") or std.mem.eql(u8, arg, "-h")) {
             return printHelp();
+        } else if (std.mem.eql(u8, arg, "--version")) {
+            return printVersion();
         } else {
             std.debug.print("Unknown option: {s}\n", .{arg});
             return printHelp();
@@ -66,10 +70,6 @@ pub fn main() !void {
             try delete(stdin, cwd, cSlice[0.. :0], interactive);
         }
     }
-}
-
-fn printHelp() !void {
-    return std.io.getStdOut().writer().writeAll(usage);
 }
 
 pub fn delete(f: std.fs.File, cwd: std.fs.Dir, file: [:0]const u8, i: bool) !void {
@@ -117,4 +117,12 @@ fn interactiveDelete(f: std.fs.File, name: []const u8) !bool {
     const line = std.mem.trim(u8, bare_line, "\r");
 
     return (std.mem.eql(u8, line, "yes") or std.mem.eql(u8, line, "y"));
+}
+
+fn printHelp() !void {
+    return std.io.getStdOut().writer().writeAll(usage);
+}
+
+fn printVersion() !void {
+    return std.debug.print("rmt-v{s}-{s}-{s}{s}\n", .{ config.version, config.cpu_arch, config.os, config.abi });
 }

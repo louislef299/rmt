@@ -9,15 +9,26 @@ const targets: []const std.Target.Query = &.{
 };
 
 pub fn build(b: *std.Build) void {
+    const version: std.SemanticVersion = .{
+        .major = 0,
+        .minor = 0,
+        .patch = 1,
+    };
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
     if (b.option(bool, "release-build", "Build executables for release target architectures") orelse false) {
         //=> Release Build Flow <=//
         inline for (targets) |t| {
+            const options = b.addOptions();
+            options.addOption([]const u8, "version", std.fmt.comptimePrint("{d}.{d}.{d}", .{ version.major, version.minor, version.patch }));
+
             const arch = @tagName(t.cpu_arch orelse unreachable);
             const os = @tagName(t.os_tag orelse unreachable);
             const abi = if (t.abi) |a| "-" ++ @tagName(a) else "";
+            options.addOption([]const u8, "cpu_arch", arch);
+            options.addOption([]const u8, "os", os);
+            options.addOption([]const u8, "abi", abi);
 
             const exe = b.addExecutable(.{
                 .name = std.fmt.comptimePrint("rmt-{s}-{s}{s}", .{ arch, os, abi }),
@@ -28,19 +39,31 @@ pub fn build(b: *std.Build) void {
             exe.addIncludePath(b.path("slre"));
             exe.addCSourceFile(.{ .file = b.path("slre/slre.c") });
             exe.linkLibC();
+
+            exe.root_module.addOptions("build_config", options);
             b.installArtifact(exe);
         }
     } else {
+        const options = b.addOptions();
+        options.addOption([]const u8, "version", std.fmt.comptimePrint("{d}.{d}.{d}", .{ version.major, version.minor, version.patch }));
+        options.addOption([]const u8, "cpu_arch", "dev");
+        options.addOption([]const u8, "os", "dev");
+        options.addOption([]const u8, "abi", "");
+
         //=> Normal Build Flow <=//
         const exe = b.addExecutable(.{
             .name = "rmt",
             .root_source_file = b.path("src/main.zig"),
             .target = target,
             .optimize = optimize,
+            .version = version,
         });
+
         exe.addIncludePath(b.path("slre"));
         exe.addCSourceFile(.{ .file = b.path("slre/slre.c") });
         exe.linkLibC();
+
+        exe.root_module.addOptions("build_config", options);
         b.installArtifact(exe);
 
         //=> Run Steps <=//
