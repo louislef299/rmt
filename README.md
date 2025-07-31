@@ -7,7 +7,7 @@ regex engine written in C, accessed leveraging [Zig FFI][].
 ## Build from Source
 
 ```bash
-$ zig build && ./zig-out/bin/rmt --help
+$ zig build -Drelease-build && ./zig-out/bin/rmt-x86_64-linux-gnu --help
 Usage: rmt [options]
 
 General Options:
