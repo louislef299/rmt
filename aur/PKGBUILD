@@ -1,0 +1,27 @@
+# Maintainer: Your Name <your.email@example.com>
+pkgname=rmt-bin
+pkgver=0.0.2
+pkgrel=1
+pkgdesc="A command-line utility for identifying and deleting Emacs backup files"
+arch=('x86_64' 'aarch64')
+url="https://github.com/louislef299/rmt"
+license=('MIT')
+provides=('rmt')
+conflicts=('rmt')
+
+source_x86_64=("https://github.com/louislef299/rmt/releases/download/v${pkgver}/rmt-x86_64-linux-musl.tar.gz")
+source_aarch64=("https://github.com/louislef299/rmt/releases/download/v${pkgver}/rmt-aarch64-linux-musl.tar.gz")
+
+# These checksums need to be updated for each release
+sha256sums_x86_64=('SKIP')  # Replace with actual checksum
+sha256sums_aarch64=('SKIP') # Replace with actual checksum
+
+package() {
+    # Install binary
+    install -Dm755 "rmt-${CARCH}-linux-musl" "${pkgdir}/usr/bin/rmt"
+    
+    # Install license if it exists
+    if [ -f LICENSE ]; then
+        install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+    fi
+}

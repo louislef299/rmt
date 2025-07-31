@@ -26,6 +26,27 @@ jobs:
         sudo apt-get install -y build-essential
         zig build --summary all -Drelease-build
         zig fmt --check .
+    - name: Create release archives
+      if: startsWith(github.ref, 'refs/tags/')
+      run: |
+        mkdir -p releases
+        TAG_NAME="${GITHUB_REF#refs/tags/}"
+        
+        # Create individual binary archives
+        for binary in zig-out/bin/rmt-*; do
+          if [ -f "$binary" ]; then
+            basename=$(basename "$binary")
+            tar -czf "releases/${basename}.tar.gz" -C zig-out/bin "$basename"
+          fi
+        done
+        
+        # Create source archive
+        git archive --format=tar.gz --prefix=rmt-${TAG_NAME#v}/ HEAD > "releases/rmt-${TAG_NAME#v}.tar.gz"
+        
+        # Generate checksums
+        cd releases
+        sha256sum *.tar.gz > checksums.txt
+    
     - name: Create GitHub Release
       if: startsWith(github.ref, 'refs/tags/')
       env:
@@ -34,5 +55,5 @@ jobs:
         TAG_NAME="${GITHUB_REF#refs/tags/}"
         gh release create "$TAG_NAME" \
           --title "$TAG_NAME" \
-          --notes-from-tag --fail-on-no-commits \
-          zig-out/bin/*
+          --notes "Binary releases for multiple platforms. See checksums.txt for SHA256 verification." \
+          releases/*.tar.gz releases/checksums.txt

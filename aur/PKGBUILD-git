@@ -1,0 +1,42 @@
+# Maintainer: Your Name <louislefebvre1999@gmail.com>
+pkgname=rmt-git
+pkgver=r.0.0.2
+pkgrel=1
+pkgdesc="A command-line utility for identifying and deleting Emacs backup files (git version)"
+arch=('x86_64' 'aarch64')
+url="https://github.com/louislef299/rmt"
+license=('GPL-3')
+depends=()
+makedepends=('zig>=0.14.0' 'git')
+provides=('rmt')
+conflicts=('rmt' 'rmt-bin')
+source=("git+https://github.com/louislef299/rmt.git")
+sha256sums=('SKIP')
+
+pkgver() {
+    cd "${srcdir}/${pkgname%-git}"
+    printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+    cd "${srcdir}/${pkgname%-git}"
+    zig build -Doptimize=ReleaseSafe
+}
+
+check() {
+    cd "${srcdir}/${pkgname%-git}"
+    zig build test
+}
+
+package() {
+    cd "${srcdir}/${pkgname%-git}"
+    
+    # Install binary
+    install -Dm755 "zig-out/bin/rmt" "${pkgdir}/usr/bin/rmt"
+    
+    # Install license
+    install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+    
+    # Install README
+    install -Dm644 README.md "${pkgdir}/usr/share/doc/${pkgname}/README.md"
+}
