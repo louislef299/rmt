@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 const targets: []const std.Target.Query = &.{
     .{ .cpu_arch = .aarch64, .os_tag = .macos },
@@ -15,10 +16,11 @@ const version: std.SemanticVersion = .{
 };
 
 fn addExeOptions(o: *std.Build.Step.Options, comptime q: std.Target.Query) void {
-    o.addOption([]const u8, "cpu_arch", @tagName(q.cpu_arch orelse unreachable));
-    o.addOption([]const u8, "os", @tagName(q.os_tag orelse unreachable));
+    o.addOption([]const u8, "cpu_arch", @tagName(q.cpu_arch.?));
+    o.addOption([]const u8, "os", @tagName(q.os_tag.?));
 
-    if (q.abi) |a| {
+    if (q.abi != null and q.abi != std.Target.Abi.none) {
+        const a = q.abi.?;
         o.addOption([]const u8, "abi", std.fmt.comptimePrint("-{s}", .{@tagName(a)}));
     } else {
         o.addOption([]const u8, "abi", "");
@@ -86,7 +88,11 @@ pub fn build(b: *std.Build) void {
             _ = buildTarget(b, t, target, .ReleaseSafe, exeName);
         }
     } else {
-        const exe = buildTarget(b, .{}, target, optimize, "rmt");
+        const exe = buildTarget(b, .{
+            .os_tag = builtin.target.os.tag,
+            .cpu_arch = builtin.target.cpu.arch,
+            .abi = builtin.target.abi,
+        }, target, optimize, "rmt");
         addRunSteps(b, exe);
         addTestSteps(b, target, optimize);
     }
