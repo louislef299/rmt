@@ -64,10 +64,13 @@ pub fn main() !void {
             // Dir.Entry returns a []const u8 and isn't null-terminated. have to
             // handle that case here...
             var cSlice = try allocator.alloc(u8, entry.name.len + 1);
-            @memcpy(cSlice[0..cSlice.len], entry.name);
+            defer allocator.free(cSlice);
+
+            std.debug.print("name: {s} and length: {d} and cSlice length: {d}\n", .{ entry.name, entry.name.len, cSlice.len });
+            @memcpy(cSlice[0..entry.name.len], entry.name);
             cSlice[entry.name.len] = 0;
 
-            try delete(stdin, cwd, cSlice[0.. :0], interactive);
+            try delete(stdin, cwd, cSlice[0..entry.name.len :0], interactive);
         }
     }
 }
