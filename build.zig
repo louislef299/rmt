@@ -14,14 +14,12 @@ const version: std.SemanticVersion = .{
     .patch = 2,
 };
 
-fn addExeOptions(o: *std.Build.Step.Options, q: std.Target.Query) void {
+fn addExeOptions(o: *std.Build.Step.Options, comptime q: std.Target.Query) void {
     o.addOption([]const u8, "cpu_arch", @tagName(q.cpu_arch orelse unreachable));
     o.addOption([]const u8, "os", @tagName(q.os_tag orelse unreachable));
 
     if (q.abi) |a| {
-        const abi_name = @tagName(a);
-        const abi_with_dash = std.fmt.comptimePrint("-{s}", .{abi_name});
-        o.addOption([]const u8, "abi", abi_with_dash);
+        o.addOption([]const u8, "abi", std.fmt.comptimePrint("-{s}", .{@tagName(a)}));
     } else {
         o.addOption([]const u8, "abi", "");
     }
@@ -58,7 +56,7 @@ fn linkSLRE(b: *std.Build, exe: *std.Build.Step.Compile) void {
     exe.linkLibC();
 }
 
-fn buildTarget(b: *std.Build, q: std.Target.Query, t: std.Build.ResolvedTarget, o: std.builtin.OptimizeMode, exeName: []const u8) *std.Build.Step.Compile {
+fn buildTarget(b: *std.Build, comptime q: std.Target.Query, t: std.Build.ResolvedTarget, o: std.builtin.OptimizeMode, exeName: []const u8) *std.Build.Step.Compile {
     const options = b.addOptions();
     const exe = b.addExecutable(.{
         .name = exeName,
