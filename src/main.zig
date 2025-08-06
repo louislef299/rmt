@@ -66,7 +66,6 @@ pub fn main() !void {
             var cSlice = try allocator.alloc(u8, entry.name.len + 1);
             defer allocator.free(cSlice);
 
-            std.debug.print("name: {s} and length: {d} and cSlice length: {d}\n", .{ entry.name, entry.name.len, cSlice.len });
             @memcpy(cSlice[0..entry.name.len], entry.name);
             cSlice[entry.name.len] = 0;
 
