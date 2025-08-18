@@ -12,7 +12,7 @@ const targets: []const std.Target.Query = &.{
 const version: std.SemanticVersion = .{
     .major = 0,
     .minor = 0,
-    .patch = 3,
+    .patch = 4,
 };
 
 fn addExeOptions(o: *std.Build.Step.Options, comptime q: std.Target.Query) void {
@@ -65,7 +65,10 @@ fn buildTarget(b: *std.Build, comptime q: std.Target.Query, t: std.Build.Resolve
         .root_source_file = b.path("src/main.zig"),
         .target = t,
         .optimize = o,
+        .strip = true,
+        .single_threaded = true,
     });
+    exe.want_lto = true;
     linkSLRE(b, exe);
     addExeOptions(options, q);
 
@@ -85,14 +88,14 @@ pub fn build(b: *std.Build) void {
                 @tagName(t.os_tag orelse unreachable),
                 if (t.abi) |a| "-" ++ @tagName(a) else "",
             });
-            _ = buildTarget(b, t, target, .ReleaseSafe, exeName);
+            _ = buildTarget(b, t, target, .ReleaseSmall, exeName);
         }
     } else {
         const exe = buildTarget(b, .{
             .os_tag = builtin.target.os.tag,
             .cpu_arch = builtin.target.cpu.arch,
             .abi = builtin.target.abi,
-        }, target, optimize, "rmt");
+        }, target, .ReleaseSmall, "rmt");
         addRunSteps(b, exe);
         addTestSteps(b, target, optimize);
     }
