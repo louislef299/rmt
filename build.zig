@@ -68,7 +68,10 @@ fn buildTarget(b: *std.Build, comptime q: std.Target.Query, t: std.Build.Resolve
         .strip = true,
         .single_threaded = true,
     });
-    exe.want_lto = true;
+    // Only enable LTO for non-macOS targets
+    if (q.os_tag != .macos) {
+        exe.want_lto = true;
+    }
     linkSLRE(b, exe);
     addExeOptions(options, q);
 
