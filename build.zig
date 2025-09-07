@@ -1,6 +1,10 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
+comptime {
+    requireZig("0.14.1");
+}
+
 const targets: []const std.Target.Query = &.{
     .{ .cpu_arch = .aarch64, .os_tag = .macos },
     .{ .cpu_arch = .aarch64, .os_tag = .linux, .abi = .gnu },
@@ -41,9 +45,11 @@ fn addRunSteps(b: *std.Build, exe: *std.Build.Step.Compile) void {
 
 fn addTestSteps(b: *std.Build, t: std.Build.ResolvedTarget, o: std.builtin.OptimizeMode) void {
     const exe_unit_tests = b.addTest(.{
-        .root_source_file = b.path("src/main.zig"),
-        .target = t,
-        .optimize = o,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/main.zig"),
+            .target = t,
+            .optimize = o,
+        }),
     });
     linkSLRE(b, exe_unit_tests);
     const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
@@ -60,14 +66,13 @@ fn linkSLRE(b: *std.Build, exe: *std.Build.Step.Compile) void {
 
 fn buildTarget(b: *std.Build, comptime q: std.Target.Query, t: std.Build.ResolvedTarget, o: std.builtin.OptimizeMode, exeName: []const u8) *std.Build.Step.Compile {
     const options = b.addOptions();
-    const exe = b.addExecutable(.{
-        .name = exeName,
+    const exe = b.addExecutable(.{ .name = exeName, .root_module = b.createModule(.{
         .root_source_file = b.path("src/main.zig"),
         .target = t,
         .optimize = o,
         .strip = true,
         .single_threaded = true,
-    });
+    }) });
     // Only enable LTO for non-macOS targets
     if (q.os_tag != .macos) {
         exe.want_lto = true;
@@ -101,5 +106,21 @@ pub fn build(b: *std.Build) void {
         }, target, .ReleaseSmall, "rmt");
         addRunSteps(b, exe);
         addTestSteps(b, target, optimize);
+    }
+}
+
+/// Require a specific version of Zig to build this project.
+/// https://github.com/ghostty-org/ghostty/blob/main/src/build/zig.zig
+pub fn requireZig(comptime required_zig: []const u8) void {
+    // Fail compilation if the current Zig version doesn't meet requirements.
+    const current_vsn = builtin.zig_version;
+    const required_vsn = std.SemanticVersion.parse(required_zig) catch unreachable;
+    if (current_vsn.major != required_vsn.major or
+        current_vsn.minor != required_vsn.minor)
+    {
+        @compileError(std.fmt.comptimePrint(
+            "Your Zig version v{} does not meet the required build version of v{}",
+            .{ current_vsn, required_vsn },
+        ));
     }
 }
