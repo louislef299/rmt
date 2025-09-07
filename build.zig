@@ -41,9 +41,11 @@ fn addRunSteps(b: *std.Build, exe: *std.Build.Step.Compile) void {
 
 fn addTestSteps(b: *std.Build, t: std.Build.ResolvedTarget, o: std.builtin.OptimizeMode) void {
     const exe_unit_tests = b.addTest(.{
-        .root_source_file = b.path("src/main.zig"),
-        .target = t,
-        .optimize = o,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/main.zig"),
+            .target = t,
+            .optimize = o,
+        }),
     });
     linkSLRE(b, exe_unit_tests);
     const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
@@ -60,14 +62,13 @@ fn linkSLRE(b: *std.Build, exe: *std.Build.Step.Compile) void {
 
 fn buildTarget(b: *std.Build, comptime q: std.Target.Query, t: std.Build.ResolvedTarget, o: std.builtin.OptimizeMode, exeName: []const u8) *std.Build.Step.Compile {
     const options = b.addOptions();
-    const exe = b.addExecutable(.{
-        .name = exeName,
+    const exe = b.addExecutable(.{ .name = exeName, .root_module = b.createModule(.{
         .root_source_file = b.path("src/main.zig"),
         .target = t,
         .optimize = o,
         .strip = true,
         .single_threaded = true,
-    });
+    }) });
     // Only enable LTO for non-macOS targets
     if (q.os_tag != .macos) {
         exe.want_lto = true;
