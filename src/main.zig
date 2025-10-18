@@ -6,6 +6,10 @@ const c = @cImport({
 
 const EMACS_TILDE = ".*~$";
 
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
+
 const usage =
     \\Usage: rmt [options]
     \\
@@ -48,7 +52,7 @@ pub fn main() !void {
     var cwd = try std.fs.cwd().openDir(".", .{ .iterate = true });
     defer cwd.close();
 
-    const stdin = std.io.getStdIn();
+    const stdin = std.fs.File.stdin();
 
     // if recursive, walk the filesystem from cwd
     if (recursive) {
@@ -101,16 +105,17 @@ pub fn delete(f: std.fs.File, cwd: std.fs.Dir, file: [:0]const u8, i: bool) !voi
 }
 
 fn interactiveDelete(f: std.fs.File, name: []const u8) !bool {
-    const r = f.reader();
+    var buf: [512]u8 = undefined;
+    var file_reader = f.reader(&buf);
+    var r = &file_reader.interface;
+    try stdout.print("delete file {s}? ", .{name});
+    try stdout.flush();
 
-    try std.io.getStdOut().writer().print("delete file {s}? ", .{name});
-
-    const bare_line = try r.readUntilDelimiterAlloc(
-        std.heap.page_allocator,
-        '\n',
-        512,
-    );
-    defer std.heap.page_allocator.free(bare_line);
+    const bare_line = r.takeDelimiterExclusive('\n') catch |err| switch (err) {
+        error.EndOfStream => return false,
+        error.StreamTooLong => return error.StreamTooLong,
+        error.ReadFailed => return error.ReadFailed,
+    };
 
     // Because of legacy reasons newlines in many places in Windows are represented
     // by the two-character sequence \r\n, which means that we must strip \r from
@@ -122,11 +127,13 @@ fn interactiveDelete(f: std.fs.File, name: []const u8) !bool {
 }
 
 fn printHelp() !void {
-    return std.io.getStdOut().writer().writeAll(usage);
+    try stdout.writeAll(usage);
+    return stdout.flush();
 }
 
 fn printVersion() !void {
-    return std.debug.print("rmt-v{s}-{s}-{s}{s}\n", .{ config.version, config.cpu_arch, config.os, config.abi });
+    try stdout.print("rmt-v{s}-{s}-{s}{s}\n", .{ config.version, config.cpu_arch, config.os, config.abi });
+    return stdout.flush();
 }
 
 test "delete function with emacs backup file" {

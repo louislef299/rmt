@@ -2,7 +2,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 
 comptime {
-    requireZig("0.14.1");
+    requireZig("0.15.2");
 }
 
 const targets: []const std.Target.Query = &.{
