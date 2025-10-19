@@ -17,6 +17,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
+        fetch-depth: 0
         submodules: true
     - uses: mlugg/setup-zig@v2
       with:
@@ -26,16 +27,11 @@ jobs:
         sudo apt-get install -y build-essential
         zig build --summary all -Drelease-build
         zig fmt --check .
-    - name: Setup Node.js
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
     - name: Get tag message
       if: startsWith(github.ref, 'refs/tags/')
       id: tag_message
       run: |
-        TAG_MESSAGE=$(npx tsx .github/scripts/get-tag-message.ts "${{ github.ref_name }}")
+        TAG_MESSAGE=$(git tag -l --format='%(contents)' "${{ github.ref_name }}")
         echo "message<<EOF" >> $GITHUB_OUTPUT
         echo "$TAG_MESSAGE" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
