@@ -15,8 +15,8 @@ const targets: []const std.Target.Query = &.{
 
 const version: std.SemanticVersion = .{
     .major = 0,
-    .minor = 0,
-    .patch = 4,
+    .minor = 1,
+    .patch = 0,
 };
 
 fn addExeOptions(o: *std.Build.Step.Options, comptime q: std.Target.Query) void {
