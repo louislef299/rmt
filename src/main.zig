@@ -10,6 +10,9 @@ var stdout_buffer: [1024]u8 = undefined;
 var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
 const stdout = &stdout_writer.interface;
 
+var recursive: bool = false;
+var interactive: bool = false;
+
 const usage =
     \\Usage: rmt [options]
     \\
@@ -30,8 +33,6 @@ pub fn main() !void {
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
 
-    var recursive: bool = false;
-    var interactive: bool = false;
     // didn't use switch here as I don't think zig supports that yet
     // https://www.openmymind.net/Switching-On-Strings-In-Zig/?
     for (args[1..]) |arg| {
@@ -69,7 +70,7 @@ pub fn main() !void {
                 else => return err,
             } orelse break;
 
-            try delete(stdin, cwd, entry.path, interactive);
+            try delete(stdin, cwd, entry.path);
         }
 
         if (accessErrors > 0) {
@@ -88,12 +89,12 @@ pub fn main() !void {
             @memcpy(cSlice[0..entry.name.len], entry.name);
             cSlice[entry.name.len] = 0;
 
-            try delete(stdin, cwd, cSlice[0..entry.name.len :0], interactive);
+            try delete(stdin, cwd, cSlice[0..entry.name.len :0]);
         }
     }
 }
 
-pub fn delete(f: std.fs.File, cwd: std.fs.Dir, file: [:0]const u8, i: bool) !void {
+pub fn delete(f: std.fs.File, cwd: std.fs.Dir, file: [:0]const u8) !void {
     const match = c.slre_match(
         EMACS_TILDE,
         file.ptr,
@@ -105,7 +106,7 @@ pub fn delete(f: std.fs.File, cwd: std.fs.Dir, file: [:0]const u8, i: bool) !voi
 
     if (match >= 0) {
         var del: bool = true;
-        if (i) {
+        if (interactive) {
             del = try interactiveDelete(f, file);
         }
         if (del) {

@@ -7,6 +7,8 @@ accessed leveraging [Zig FFI][].
 
 ## Build from Source
 
+[Download zig][] and try it out! If you don't have the time or can't get it working, you can also download the tool from [releases][].
+
 ```bash
 # Clean zig cache first
 $ rm -rf .zig-cache
@@ -55,8 +57,10 @@ and voilà! All of your backups are cleaned up! The same outcome could be
 achieved with `rmt -r` and the files will be printed out to the screen that are
 removed.
 
+[Download zig]: https://ziglang.org/download/
 [Emacs backup files]: https://emacsdocs.org/docs/emacs/Backup
 [Neovim's]: https://the-pi-guy.com/blog/neovims_backup_and_recovery_features/
+[releases]: https://github.com/louislef299/rmt/releases
 [SLRE]: https://github.com/cesanta/slre
 [Zig]: https://ziglang.org/
 [Zig FFI]: https://zig.guide/working-with-c/abi
