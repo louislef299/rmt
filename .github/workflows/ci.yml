@@ -26,6 +26,19 @@ jobs:
         sudo apt-get install -y build-essential
         zig build --summary all -Drelease-build
         zig fmt --check .
+    - name: Setup Node.js
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    - name: Get tag message
+      if: startsWith(github.ref, 'refs/tags/')
+      id: tag_message
+      run: |
+        TAG_MESSAGE=$(npx tsx .github/scripts/get-tag-message.ts "${{ github.ref_name }}")
+        echo "message<<EOF" >> $GITHUB_OUTPUT
+        echo "$TAG_MESSAGE" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
     - name: Create GitHub Release
       if: startsWith(github.ref, 'refs/tags/')
       env:
@@ -34,5 +47,6 @@ jobs:
         git show "${{ github.ref_name }}" --no-patch
         gh release create "${{ github.ref_name }}" \
           --title "${{ github.ref_name }}" \
-          --notes-from-tag --verify-tag \
+          --notes "${{ steps.tag_message.outputs.message }}" \
+          --verify-tag \
           zig-out/bin/*
