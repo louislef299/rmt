@@ -59,8 +59,23 @@ pub fn main() !void {
         var walker = try cwd.walk(allocator);
         defer walker.deinit();
 
-        while (try walker.next()) |entry| {
+        var accessErrors: i32 = 0;
+        while (true) {
+            const entry = walker.next() catch |err| switch (err) {
+                error.AccessDenied, error.PermissionDenied => {
+                    accessErrors += 1;
+                    continue;
+                },
+                else => return err,
+            } orelse break;
+
             try delete(stdin, cwd, entry.path, interactive);
+        }
+
+        if (accessErrors > 0) {
+            const cwd_path = try cwd.realpathAlloc(allocator, ".");
+            defer allocator.free(cwd_path);
+            std.debug.print("received {} permisison errors recursing {s}\n", .{ accessErrors, cwd_path });
         }
     } else {
         var it = cwd.iterate();
