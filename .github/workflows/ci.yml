@@ -39,13 +39,20 @@ jobs:
         echo "message<<EOF" >> $GITHUB_OUTPUT
         echo "$TAG_MESSAGE" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
+    - name: Get previous tag
+      if: startsWith(github.ref, 'refs/tags/')
+      id: previous_tag
+      run: |
+        # Get the previous tag before the current one
+        PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -A1 "^${{ github.ref_name }}$" | tail -n1)
+        echo "tag=${PREVIOUS_TAG}" >> $GITHUB_OUTPUT
     - name: Generate changelog with git-cliff
       if: startsWith(github.ref, 'refs/tags/')
       id: changelog
       uses: orhun/git-cliff-action@v4
       with:
         config: cliff.toml
-        args: --latest --strip header
+        args: --strip header ${{ steps.previous_tag.outputs.tag }}..${{ github.ref_name }}
       env:
         OUTPUT: CHANGES.md
     - name: Create GitHub Release
