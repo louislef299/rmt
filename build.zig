@@ -1,5 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
+const appVersion = @import("build.zig.zon").version;
 
 comptime {
     requireZig("0.15.2");
@@ -13,12 +14,6 @@ const targets: []const std.Target.Query = &.{
     .{ .cpu_arch = .x86_64, .os_tag = .linux, .abi = .musl },
 };
 
-const version: std.SemanticVersion = .{
-    .major = 0,
-    .minor = 1,
-    .patch = 0,
-};
-
 fn addExeOptions(o: *std.Build.Step.Options, comptime q: std.Target.Query) void {
     o.addOption([]const u8, "cpu_arch", @tagName(q.cpu_arch.?));
     o.addOption([]const u8, "os", @tagName(q.os_tag.?));
@@ -29,7 +24,7 @@ fn addExeOptions(o: *std.Build.Step.Options, comptime q: std.Target.Query) void 
     } else {
         o.addOption([]const u8, "abi", "");
     }
-    o.addOption([]const u8, "version", std.fmt.comptimePrint("{d}.{d}.{d}", .{ version.major, version.minor, version.patch }));
+    o.addOption([]const u8, "version", std.fmt.comptimePrint("{s}", .{appVersion}));
 }
 
 fn addRunSteps(b: *std.Build, exe: *std.Build.Step.Compile) void {
