@@ -1,0 +1,10 @@
+---
+version: 2
+updates:
+- commit-message:
+    prefix: chore(actions)
+  directory: /
+  package-ecosystem: github-actions
+  schedule:
+    day: sunday
+    interval: weekly
